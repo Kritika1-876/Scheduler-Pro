@@ -154,10 +154,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .employee-info {
             flex: 1;
+            min-width: 200px;
         }
 
         .employee-info h3 {
@@ -269,10 +271,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .request-details {
             flex: 1;
+            min-width: 200px;
         }
 
         .request-details p {
@@ -375,25 +379,42 @@
             font-weight: 600;
         }
 
-        .days-off-selection {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        .days-off-display {
+            background: #f0f4ff;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.95em;
+            color: #333;
+        }
+
+        .preference-section {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .preference-options {
+            display: flex;
+            flex-direction: column;
             gap: 10px;
             margin-top: 10px;
         }
 
-        .day-checkbox {
+        .preference-option {
             display: flex;
             align-items: center;
             padding: 8px;
-            background: #f0f4ff;
+            background: white;
             border-radius: 6px;
+            border: 2px solid #ddd;
             cursor: pointer;
         }
 
-        .day-checkbox input {
+        .preference-option input[type="radio"] {
             width: auto;
-            margin-right: 8px;
+            margin-right: 10px;
             cursor: pointer;
         }
 
@@ -414,6 +435,10 @@
         .summary-item strong {
             color: #667eea;
         }
+
+        .preference-label {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -425,10 +450,9 @@
 
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="switchTab('employees')">👥 Employees</button>
-            <button class="nav-tab" onclick="switchTab('preferences')">⚙️ Preferences</button>
             <button class="nav-tab" onclick="switchTab('requests')">📋 Requests</button>
-            <button class="nav-tab" onclick="switchTab('schedule')">📊 Schedule</button>
             <button class="nav-tab" onclick="switchTab('vacation')">✈️ Vacation</button>
+            <button class="nav-tab" onclick="switchTab('schedule')">📊 Generate</button>
         </div>
 
         <!-- Employees Tab -->
@@ -449,28 +473,19 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Days Off (Select 2 by default)</label>
-                    <div class="days-off-selection">
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="daysOff" value="Monday"> Monday
+                    <label>Shift Preference</label>
+                    <div class="preference-options">
+                        <label class="preference-option">
+                            <input type="radio" name="shiftPreference" value="day"> 
+                            <span class="preference-label">☀️ Prefer Day Shift</span>
                         </label>
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="daysOff" value="Tuesday"> Tuesday
+                        <label class="preference-option">
+                            <input type="radio" name="shiftPreference" value="night"> 
+                            <span class="preference-label">🌙 Prefer Night Shift</span>
                         </label>
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="daysOff" value="Wednesday"> Wednesday
-                        </label>
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="daysOff" value="Thursday"> Thursday
-                        </label>
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="daysOff" value="Friday"> Friday
-                        </label>
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="daysOff" value="Saturday"> Saturday
-                        </label>
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="daysOff" value="Sunday"> Sunday
+                        <label class="preference-option">
+                            <input type="radio" name="shiftPreference" value="balanced" checked> 
+                            <span class="preference-label">⚖️ Balanced (Alternating)</span>
                         </label>
                     </div>
                 </div>
@@ -479,15 +494,6 @@
 
                 <h2 style="margin-top: 30px;">Employee List</h2>
                 <div id="employeeList"></div>
-            </div>
-        </div>
-
-        <!-- Preferences Tab -->
-        <div id="preferences" class="tab-content">
-            <div class="content">
-                <h2>Shift Preferences</h2>
-                <p style="color: #666; margin-bottom: 20px;">Set preferred shifts for each employee. They may still be assigned opposite shifts based on business needs.</p>
-                <div id="preferencesList"></div>
             </div>
         </div>
 
@@ -525,32 +531,6 @@
             </div>
         </div>
 
-        <!-- Schedule Tab -->
-        <div id="schedule" class="tab-content">
-            <div class="content">
-                <h2>Generated Schedule</h2>
-
-                <div class="form-group">
-                    <label>Schedule Start Date</label>
-                    <input type="date" id="scheduleStartDate">
-                </div>
-
-                <div class="form-group">
-                    <label>Schedule Length (days)</label>
-                    <input type="number" id="scheduleLength" placeholder="e.g., 30" min="7" max="365" value="30">
-                </div>
-
-                <button onclick="generateSchedule()">🔄 Generate Schedule</button>
-
-                <div class="export-buttons" style="margin-top: 20px;">
-                    <button class="btn-secondary" onclick="exportScheduleCSV()">📥 Export as CSV</button>
-                    <button class="btn-secondary" onclick="exportSchedulePDF()">📄 Export as PDF</button>
-                </div>
-
-                <div class="schedule-grid" id="scheduleGrid"></div>
-            </div>
-        </div>
-
         <!-- Vacation Tab -->
         <div id="vacation" class="tab-content">
             <div class="content">
@@ -579,6 +559,32 @@
                 <div id="vacationList"></div>
             </div>
         </div>
+
+        <!-- Schedule Tab -->
+        <div id="schedule" class="tab-content">
+            <div class="content">
+                <h2>Generated Schedule</h2>
+
+                <div class="form-group">
+                    <label>Schedule Start Date</label>
+                    <input type="date" id="scheduleStartDate">
+                </div>
+
+                <div class="form-group">
+                    <label>Schedule Length (days)</label>
+                    <input type="number" id="scheduleLength" placeholder="e.g., 30" min="7" max="365" value="30">
+                </div>
+
+                <button onclick="generateSchedule()">🔄 Generate Schedule</button>
+
+                <div class="export-buttons" style="margin-top: 20px;">
+                    <button class="btn-secondary" onclick="exportScheduleCSV()">📥 Export as CSV</button>
+                    <button class="btn-secondary" onclick="exportSchedulePDF()">📄 Export as PDF</button>
+                </div>
+
+                <div class="schedule-grid" id="scheduleGrid"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -586,7 +592,6 @@
         class SchedulerApp {
             constructor() {
                 this.employees = this.loadData('employees') || [];
-                this.preferences = this.loadData('preferences') || {};
                 this.requests = this.loadData('requests') || [];
                 this.vacations = this.loadData('vacations') || [];
                 this.schedule = this.loadData('schedule') || {};
@@ -601,38 +606,37 @@
                 return data ? JSON.parse(data) : null;
             }
 
-            addEmployee(name, hours, daysOff) {
+            // Generate random 2 back-to-back days off
+            generateRandomDaysOff() {
+                const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const startDay = Math.floor(Math.random() * 6); // 0-5 to allow pairs
+                return [daysOfWeek[startDay], daysOfWeek[startDay + 1]];
+            }
+
+            addEmployee(name, hours, shiftPreference) {
                 if (!name || !hours) {
                     alert('Please fill in all fields');
                     return false;
                 }
 
+                const daysOff = this.generateRandomDaysOff();
+
                 const employee = {
                     id: Date.now(),
                     name,
                     hours: parseInt(hours),
-                    daysOff: daysOff.length >= 2 ? daysOff : ['Sunday', 'Monday']
+                    daysOff: daysOff,
+                    shiftPreference: shiftPreference || 'balanced'
                 };
 
                 this.employees.push(employee);
                 this.saveData('employees', this.employees);
-                this.preferences[employee.id] = { preference: 'balanced', id: employee.id, name: name };
-                this.saveData('preferences', this.preferences);
                 return true;
             }
 
             deleteEmployee(id) {
                 this.employees = this.employees.filter(e => e.id !== id);
                 this.saveData('employees', this.employees);
-                delete this.preferences[id];
-                this.saveData('preferences', this.preferences);
-            }
-
-            setPreference(employeeId, preference) {
-                if (this.preferences[employeeId]) {
-                    this.preferences[employeeId].preference = preference;
-                    this.saveData('preferences', this.preferences);
-                }
             }
 
             addRequest(employeeName, startDate, endDate, reason) {
@@ -734,18 +738,17 @@
                         }
 
                         // Assign shift based on preference
-                        const pref = this.preferences[employee.id];
                         let shift = 'day';
 
-                        if (pref && pref.preference === 'night') {
+                        if (employee.shiftPreference === 'night') {
                             shift = 'night';
-                            // Occasionally assign day shifts even if prefer night
+                            // Occasionally assign day shifts even if prefer night (15% chance)
                             if (Math.random() < 0.15) {
                                 shift = 'day';
                             }
-                        } else if (pref && pref.preference === 'day') {
+                        } else if (employee.shiftPreference === 'day') {
                             shift = 'day';
-                            // Occasionally assign night shifts even if prefer day
+                            // Occasionally assign night shifts even if prefer day (15% chance)
                             if (Math.random() < 0.15) {
                                 shift = 'night';
                             }
@@ -784,19 +787,13 @@
         function addEmployee() {
             const name = document.getElementById('employeeName').value.trim();
             const hours = document.getElementById('workingHours').value;
-            const daysOffCheckboxes = document.querySelectorAll('input[name="daysOff"]:checked');
-            const daysOff = Array.from(daysOffCheckboxes).map(cb => cb.value);
+            const shiftPreference = document.querySelector('input[name="shiftPreference"]:checked').value;
 
-            if (daysOff.length < 2) {
-                alert('Please select at least 2 days off');
-                return;
-            }
-
-            if (app.addEmployee(name, hours, daysOff)) {
-                showAlert('Employee added successfully!', 'success');
+            if (app.addEmployee(name, hours, shiftPreference)) {
+                showAlert('Employee added successfully! Random days off assigned.', 'success');
                 document.getElementById('employeeName').value = '';
                 document.getElementById('workingHours').value = '8';
-                document.querySelectorAll('input[name="daysOff"]').forEach(cb => cb.checked = false);
+                document.querySelector('input[name="shiftPreference"][value="balanced"]').checked = true;
                 renderEmployees();
                 updateEmployeeSelects();
             }
@@ -812,6 +809,7 @@
             }
 
             app.employees.forEach(emp => {
+                const preferenceEmoji = emp.shiftPreference === 'day' ? '☀️' : emp.shiftPreference === 'night' ? '🌙' : '⚖️';
                 const card = document.createElement('div');
                 card.className = 'employee-card';
                 card.innerHTML = `
@@ -819,6 +817,7 @@
                         <h3>${emp.name}</h3>
                         <p><strong>Hours:</strong> ${emp.hours} hours/day</p>
                         <p><strong>Days Off:</strong> ${emp.daysOff.join(', ')}</p>
+                        <p><strong>Shift Preference:</strong> ${preferenceEmoji} ${emp.shiftPreference.charAt(0).toUpperCase() + emp.shiftPreference.slice(1)}</p>
                     </div>
                     <button class="btn-danger" onclick="deleteEmployeeConfirm(${emp.id})">🗑️ Delete</button>
                 `;
@@ -832,45 +831,6 @@
                 renderEmployees();
                 updateEmployeeSelects();
             }
-        }
-
-        function renderPreferences() {
-            const list = document.getElementById('preferencesList');
-            list.innerHTML = '';
-
-            if (app.employees.length === 0) {
-                list.innerHTML = '<p style="color: #999;">Add employees first.</p>';
-                return;
-            }
-
-            app.employees.forEach(emp => {
-                const pref = app.preferences[emp.id] || {};
-                const card = document.createElement('div');
-                card.className = 'employee-card';
-                card.innerHTML = `
-                    <div class="employee-info">
-                        <h3>${emp.name}</h3>
-                        <div style="margin-top: 10px;">
-                            <label style="margin-right: 15px;">
-                                <input type="radio" name="pref_${emp.id}" value="day" ${pref.preference === 'day' ? 'checked' : ''} 
-                                    onchange="app.setPreference(${emp.id}, 'day'); renderPreferences();"> 
-                                ☀️ Prefer Day Shift
-                            </label>
-                            <label style="margin-right: 15px;">
-                                <input type="radio" name="pref_${emp.id}" value="night" ${pref.preference === 'night' ? 'checked' : ''} 
-                                    onchange="app.setPreference(${emp.id}, 'night'); renderPreferences();"> 
-                                🌙 Prefer Night Shift
-                            </label>
-                            <label>
-                                <input type="radio" name="pref_${emp.id}" value="balanced" ${pref.preference === 'balanced' || pref.preference === undefined ? 'checked' : ''} 
-                                    onchange="app.setPreference(${emp.id}, 'balanced'); renderPreferences();"> 
-                                ⚖️ Balanced
-                            </label>
-                        </div>
-                    </div>
-                `;
-                list.appendChild(card);
-            });
         }
 
         function updateEmployeeSelects() {
@@ -986,6 +946,11 @@
         function generateSchedule() {
             const startDate = document.getElementById('scheduleStartDate').value;
             const days = document.getElementById('scheduleLength').value;
+
+            if (app.employees.length === 0) {
+                alert('Please add at least one employee first');
+                return;
+            }
 
             if (app.generateSchedule(startDate, days)) {
                 showAlert('Schedule generated successfully!', 'success');
@@ -1129,7 +1094,6 @@
 
         // Initial render
         renderEmployees();
-        renderPreferences();
         renderRequests();
         renderVacations();
         renderSchedule();
