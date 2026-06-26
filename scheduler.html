@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scheduler Pro - Schedule Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 100%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #e0e0e0;
+            background: #f5f5f5;
+        }
+
+        .nav-tab {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            background: #f5f5f5;
+            border: none;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab:hover {
+            background: #efefef;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .content {
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: transform 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            margin-top: 5px;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            width: auto;
+            padding: 8px 12px;
+            margin-top: 0;
+        }
+
+        /* Employee Card */
+        .employee-card {
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .employee-info {
+            flex: 1;
+        }
+
+        .employee-info h3 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .employee-info p {
+            font-size: 0.9em;
+            color: #666;
+            margin: 2px 0;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        /* Schedule Grid */
+        .schedule-grid {
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .schedule-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .schedule-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .schedule-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .shift-day {
+            background: #d4edda;
+            color: #155724;
+            font-weight: 600;
+            border-radius: 4px;
+            padding: 5px 8px;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+
+        .shift-night {
+            background: #cfe2ff;
+            color: #084298;
+            font-weight: 600;
+            border-radius: 4px;
+            padding: 5px 8px;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+
+        .shift-off {
+            background: #e2e3e5;
+            color: #383d41;
+            font-weight: 600;
+            border-radius: 4px;
+            padding: 5px 8px;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+
+        .shift-vacation {
+            background: #fff3cd;
+            color: #664d03;
+            font-weight: 600;
+            border-radius: 4px;
+            padding: 5px 8px;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+
+        /* Request Item */
+        .request-item {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .request-details {
+            flex: 1;
+        }
+
+        .request-details p {
+            margin: 2px 0;
+            font-size: 0.95em;
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* Export Section */
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .export-buttons button {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        /* Preference Badge */
+        .preference-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            margin-left: 5px;
+        }
+
+        /* Small screens */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.4em;
+            }
+
+            .nav-tab {
+                font-size: 0.8em;
+                padding: 10px 5px;
+            }
+
+            .content {
+                padding: 15px;
+                max-height: calc(100vh - 180px);
+            }
+
+            .employee-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .schedule-table {
+                font-size: 0.9em;
+            }
+
+            .schedule-table th,
+            .schedule-table td {
+                padding: 8px;
+            }
+        }
+
+        .hours-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .hours-input input {
+            flex: 1;
+        }
+
+        .hours-input span {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .days-off-selection {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .day-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: #f0f4ff;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .day-checkbox input {
+            width: auto;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .summary-section {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+
+        .summary-item strong {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Scheduler Pro</h1>
+            <p>Manage your team schedules efficiently</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('employees')">👥 Employees</button>
+            <button class="nav-tab" onclick="switchTab('preferences')">⚙️ Preferences</button>
+            <button class="nav-tab" onclick="switchTab('requests')">📋 Requests</button>
+            <button class="nav-tab" onclick="switchTab('schedule')">📊 Schedule</button>
+            <button class="nav-tab" onclick="switchTab('vacation')">✈️ Vacation</button>
+        </div>
+
+        <!-- Employees Tab -->
+        <div id="employees" class="tab-content active">
+            <div class="content">
+                <h2>Add Employees</h2>
+                <div class="form-group">
+                    <label>Employee Name</label>
+                    <input type="text" id="employeeName" placeholder="Enter employee name">
+                </div>
+
+                <div class="form-group">
+                    <label>Working Hours Per Day</label>
+                    <div class="hours-input">
+                        <input type="number" id="workingHours" placeholder="e.g., 8" min="1" max="24" value="8">
+                        <span>hours</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Days Off (Select 2 by default)</label>
+                    <div class="days-off-selection">
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="daysOff" value="Monday"> Monday
+                        </label>
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="daysOff" value="Tuesday"> Tuesday
+                        </label>
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="daysOff" value="Wednesday"> Wednesday
+                        </label>
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="daysOff" value="Thursday"> Thursday
+                        </label>
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="daysOff" value="Friday"> Friday
+                        </label>
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="daysOff" value="Saturday"> Saturday
+                        </label>
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="daysOff" value="Sunday"> Sunday
+                        </label>
+                    </div>
+                </div>
+
+                <button onclick="addEmployee()">➕ Add Employee</button>
+
+                <h2 style="margin-top: 30px;">Employee List</h2>
+                <div id="employeeList"></div>
+            </div>
+        </div>
+
+        <!-- Preferences Tab -->
+        <div id="preferences" class="tab-content">
+            <div class="content">
+                <h2>Shift Preferences</h2>
+                <p style="color: #666; margin-bottom: 20px;">Set preferred shifts for each employee. They may still be assigned opposite shifts based on business needs.</p>
+                <div id="preferencesList"></div>
+            </div>
+        </div>
+
+        <!-- Requests Tab -->
+        <div id="requests" class="tab-content">
+            <div class="content">
+                <h2>Time Off Requests</h2>
+                
+                <div class="form-group">
+                    <label>Employee Name</label>
+                    <select id="requestEmployeeName">
+                        <option value="">Select an employee</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" id="requestStartDate">
+                </div>
+
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" id="requestEndDate">
+                </div>
+
+                <div class="form-group">
+                    <label>Reason</label>
+                    <textarea id="requestReason" placeholder="Enter reason for time off" rows="3"></textarea>
+                </div>
+
+                <button onclick="addRequest()">📝 Submit Request</button>
+
+                <h2 style="margin-top: 30px;">Pending Requests</h2>
+                <div id="requestsList"></div>
+            </div>
+        </div>
+
+        <!-- Schedule Tab -->
+        <div id="schedule" class="tab-content">
+            <div class="content">
+                <h2>Generated Schedule</h2>
+
+                <div class="form-group">
+                    <label>Schedule Start Date</label>
+                    <input type="date" id="scheduleStartDate">
+                </div>
+
+                <div class="form-group">
+                    <label>Schedule Length (days)</label>
+                    <input type="number" id="scheduleLength" placeholder="e.g., 30" min="7" max="365" value="30">
+                </div>
+
+                <button onclick="generateSchedule()">🔄 Generate Schedule</button>
+
+                <div class="export-buttons" style="margin-top: 20px;">
+                    <button class="btn-secondary" onclick="exportScheduleCSV()">📥 Export as CSV</button>
+                    <button class="btn-secondary" onclick="exportSchedulePDF()">📄 Export as PDF</button>
+                </div>
+
+                <div class="schedule-grid" id="scheduleGrid"></div>
+            </div>
+        </div>
+
+        <!-- Vacation Tab -->
+        <div id="vacation" class="tab-content">
+            <div class="content">
+                <h2>Vacation Management</h2>
+
+                <div class="form-group">
+                    <label>Employee Name</label>
+                    <select id="vacationEmployeeName">
+                        <option value="">Select an employee</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Vacation Start Date</label>
+                    <input type="date" id="vacationStartDate">
+                </div>
+
+                <div class="form-group">
+                    <label>Vacation End Date</label>
+                    <input type="date" id="vacationEndDate">
+                </div>
+
+                <button onclick="addVacation()">✅ Add Vacation</button>
+
+                <h2 style="margin-top: 30px;">Vacation Schedule</h2>
+                <div id="vacationList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Storage
+        class SchedulerApp {
+            constructor() {
+                this.employees = this.loadData('employees') || [];
+                this.preferences = this.loadData('preferences') || {};
+                this.requests = this.loadData('requests') || [];
+                this.vacations = this.loadData('vacations') || [];
+                this.schedule = this.loadData('schedule') || {};
+            }
+
+            saveData(key, data) {
+                localStorage.setItem(key, JSON.stringify(data));
+            }
+
+            loadData(key) {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : null;
+            }
+
+            addEmployee(name, hours, daysOff) {
+                if (!name || !hours) {
+                    alert('Please fill in all fields');
+                    return false;
+                }
+
+                const employee = {
+                    id: Date.now(),
+                    name,
+                    hours: parseInt(hours),
+                    daysOff: daysOff.length >= 2 ? daysOff : ['Sunday', 'Monday']
+                };
+
+                this.employees.push(employee);
+                this.saveData('employees', this.employees);
+                this.preferences[employee.id] = { preference: 'balanced', id: employee.id, name: name };
+                this.saveData('preferences', this.preferences);
+                return true;
+            }
+
+            deleteEmployee(id) {
+                this.employees = this.employees.filter(e => e.id !== id);
+                this.saveData('employees', this.employees);
+                delete this.preferences[id];
+                this.saveData('preferences', this.preferences);
+            }
+
+            setPreference(employeeId, preference) {
+                if (this.preferences[employeeId]) {
+                    this.preferences[employeeId].preference = preference;
+                    this.saveData('preferences', this.preferences);
+                }
+            }
+
+            addRequest(employeeName, startDate, endDate, reason) {
+                if (!employeeName || !startDate || !endDate) {
+                    alert('Please fill in all required fields');
+                    return false;
+                }
+
+                const request = {
+                    id: Date.now(),
+                    employeeName,
+                    startDate,
+                    endDate,
+                    reason,
+                    status: 'pending'
+                };
+
+                this.requests.push(request);
+                this.saveData('requests', this.requests);
+                return true;
+            }
+
+            deleteRequest(id) {
+                this.requests = this.requests.filter(r => r.id !== id);
+                this.saveData('requests', this.requests);
+            }
+
+            addVacation(employeeName, startDate, endDate) {
+                if (!employeeName || !startDate || !endDate) {
+                    alert('Please fill in all required fields');
+                    return false;
+                }
+
+                const vacation = {
+                    id: Date.now(),
+                    employeeName,
+                    startDate,
+                    endDate
+                };
+
+                this.vacations.push(vacation);
+                this.saveData('vacations', this.vacations);
+                return true;
+            }
+
+            deleteVacation(id) {
+                this.vacations = this.vacations.filter(v => v.id !== id);
+                this.saveData('vacations', this.vacations);
+            }
+
+            generateSchedule(startDate, days) {
+                if (!startDate || !days) {
+                    alert('Please fill in all fields');
+                    return false;
+                }
+
+                const schedule = {};
+                const start = new Date(startDate);
+                const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+                this.employees.forEach(employee => {
+                    schedule[employee.name] = [];
+                    let lastShift = 'day';
+
+                    for (let i = 0; i < parseInt(days); i++) {
+                        const currentDate = new Date(start);
+                        currentDate.setDate(currentDate.getDate() + i);
+                        const dateStr = currentDate.toISOString().split('T')[0];
+                        const dayName = daysOfWeek[currentDate.getDay()];
+
+                        // Check if vacation
+                        const onVacation = this.vacations.some(v => 
+                            v.employeeName === employee.name &&
+                            new Date(v.startDate) <= currentDate &&
+                            new Date(v.endDate) >= currentDate
+                        );
+
+                        if (onVacation) {
+                            schedule[employee.name].push({ date: dateStr, shift: 'vacation' });
+                            continue;
+                        }
+
+                        // Check if day off
+                        if (employee.daysOff.includes(dayName)) {
+                            schedule[employee.name].push({ date: dateStr, shift: 'off' });
+                            continue;
+                        }
+
+                        // Check requests
+                        const hasRequest = this.requests.some(r =>
+                            r.employeeName === employee.name &&
+                            new Date(r.startDate) <= currentDate &&
+                            new Date(r.endDate) >= currentDate
+                        );
+
+                        if (hasRequest) {
+                            schedule[employee.name].push({ date: dateStr, shift: 'off' });
+                            continue;
+                        }
+
+                        // Assign shift based on preference
+                        const pref = this.preferences[employee.id];
+                        let shift = 'day';
+
+                        if (pref && pref.preference === 'night') {
+                            shift = 'night';
+                            // Occasionally assign day shifts even if prefer night
+                            if (Math.random() < 0.15) {
+                                shift = 'day';
+                            }
+                        } else if (pref && pref.preference === 'day') {
+                            shift = 'day';
+                            // Occasionally assign night shifts even if prefer day
+                            if (Math.random() < 0.15) {
+                                shift = 'night';
+                            }
+                        } else {
+                            // Balanced - alternate between day and night
+                            shift = lastShift === 'day' ? 'night' : 'day';
+                            lastShift = shift;
+                        }
+
+                        schedule[employee.name].push({ date: dateStr, shift: shift });
+                    }
+                });
+
+                this.schedule = { startDate, days: parseInt(days), schedule };
+                this.saveData('schedule', this.schedule);
+                return true;
+            }
+        }
+
+        // Initialize App
+        const app = new SchedulerApp();
+
+        // UI Functions
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'schedule') {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('scheduleStartDate').value = today;
+            }
+        }
+
+        function addEmployee() {
+            const name = document.getElementById('employeeName').value.trim();
+            const hours = document.getElementById('workingHours').value;
+            const daysOffCheckboxes = document.querySelectorAll('input[name="daysOff"]:checked');
+            const daysOff = Array.from(daysOffCheckboxes).map(cb => cb.value);
+
+            if (daysOff.length < 2) {
+                alert('Please select at least 2 days off');
+                return;
+            }
+
+            if (app.addEmployee(name, hours, daysOff)) {
+                showAlert('Employee added successfully!', 'success');
+                document.getElementById('employeeName').value = '';
+                document.getElementById('workingHours').value = '8';
+                document.querySelectorAll('input[name="daysOff"]').forEach(cb => cb.checked = false);
+                renderEmployees();
+                updateEmployeeSelects();
+            }
+        }
+
+        function renderEmployees() {
+            const list = document.getElementById('employeeList');
+            list.innerHTML = '';
+
+            if (app.employees.length === 0) {
+                list.innerHTML = '<p style="color: #999;">No employees added yet.</p>';
+                return;
+            }
+
+            app.employees.forEach(emp => {
+                const card = document.createElement('div');
+                card.className = 'employee-card';
+                card.innerHTML = `
+                    <div class="employee-info">
+                        <h3>${emp.name}</h3>
+                        <p><strong>Hours:</strong> ${emp.hours} hours/day</p>
+                        <p><strong>Days Off:</strong> ${emp.daysOff.join(', ')}</p>
+                    </div>
+                    <button class="btn-danger" onclick="deleteEmployeeConfirm(${emp.id})">🗑️ Delete</button>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function deleteEmployeeConfirm(id) {
+            if (confirm('Are you sure you want to delete this employee?')) {
+                app.deleteEmployee(id);
+                renderEmployees();
+                updateEmployeeSelects();
+            }
+        }
+
+        function renderPreferences() {
+            const list = document.getElementById('preferencesList');
+            list.innerHTML = '';
+
+            if (app.employees.length === 0) {
+                list.innerHTML = '<p style="color: #999;">Add employees first.</p>';
+                return;
+            }
+
+            app.employees.forEach(emp => {
+                const pref = app.preferences[emp.id] || {};
+                const card = document.createElement('div');
+                card.className = 'employee-card';
+                card.innerHTML = `
+                    <div class="employee-info">
+                        <h3>${emp.name}</h3>
+                        <div style="margin-top: 10px;">
+                            <label style="margin-right: 15px;">
+                                <input type="radio" name="pref_${emp.id}" value="day" ${pref.preference === 'day' ? 'checked' : ''} 
+                                    onchange="app.setPreference(${emp.id}, 'day'); renderPreferences();"> 
+                                ☀️ Prefer Day Shift
+                            </label>
+                            <label style="margin-right: 15px;">
+                                <input type="radio" name="pref_${emp.id}" value="night" ${pref.preference === 'night' ? 'checked' : ''} 
+                                    onchange="app.setPreference(${emp.id}, 'night'); renderPreferences();"> 
+                                🌙 Prefer Night Shift
+                            </label>
+                            <label>
+                                <input type="radio" name="pref_${emp.id}" value="balanced" ${pref.preference === 'balanced' || pref.preference === undefined ? 'checked' : ''} 
+                                    onchange="app.setPreference(${emp.id}, 'balanced'); renderPreferences();"> 
+                                ⚖️ Balanced
+                            </label>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function updateEmployeeSelects() {
+            const selects = ['requestEmployeeName', 'vacationEmployeeName'];
+            const names = app.employees.map(e => e.name);
+
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Select an employee</option>';
+                names.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    select.appendChild(option);
+                });
+                select.value = currentValue;
+            });
+        }
+
+        function addRequest() {
+            const employeeName = document.getElementById('requestEmployeeName').value;
+            const startDate = document.getElementById('requestStartDate').value;
+            const endDate = document.getElementById('requestEndDate').value;
+            const reason = document.getElementById('requestReason').value;
+
+            if (app.addRequest(employeeName, startDate, endDate, reason)) {
+                showAlert('Request submitted successfully!', 'success');
+                document.getElementById('requestEmployeeName').value = '';
+                document.getElementById('requestStartDate').value = '';
+                document.getElementById('requestEndDate').value = '';
+                document.getElementById('requestReason').value = '';
+                renderRequests();
+            }
+        }
+
+        function renderRequests() {
+            const list = document.getElementById('requestsList');
+            list.innerHTML = '';
+
+            if (app.requests.length === 0) {
+                list.innerHTML = '<p style="color: #999;">No requests yet.</p>';
+                return;
+            }
+
+            app.requests.forEach(req => {
+                const item = document.createElement('div');
+                item.className = 'request-item';
+                item.innerHTML = `
+                    <div class="request-details">
+                        <p><strong>${req.employeeName}</strong></p>
+                        <p><strong>Dates:</strong> ${req.startDate} to ${req.endDate}</p>
+                        <p><strong>Reason:</strong> ${req.reason}</p>
+                    </div>
+                    <button class="btn-danger" onclick="deleteRequestConfirm(${req.id})">🗑️ Delete</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function deleteRequestConfirm(id) {
+            if (confirm('Delete this request?')) {
+                app.deleteRequest(id);
+                renderRequests();
+            }
+        }
+
+        function addVacation() {
+            const employeeName = document.getElementById('vacationEmployeeName').value;
+            const startDate = document.getElementById('vacationStartDate').value;
+            const endDate = document.getElementById('vacationEndDate').value;
+
+            if (app.addVacation(employeeName, startDate, endDate)) {
+                showAlert('Vacation added successfully!', 'success');
+                document.getElementById('vacationEmployeeName').value = '';
+                document.getElementById('vacationStartDate').value = '';
+                document.getElementById('vacationEndDate').value = '';
+                renderVacations();
+            }
+        }
+
+        function renderVacations() {
+            const list = document.getElementById('vacationList');
+            list.innerHTML = '';
+
+            if (app.vacations.length === 0) {
+                list.innerHTML = '<p style="color: #999;">No vacations scheduled yet.</p>';
+                return;
+            }
+
+            app.vacations.forEach(vac => {
+                const item = document.createElement('div');
+                item.className = 'request-item';
+                item.style.borderLeftColor = '#ffc107';
+                item.innerHTML = `
+                    <div class="request-details">
+                        <p><strong>${vac.employeeName}</strong></p>
+                        <p><strong>Vacation Period:</strong> ${vac.startDate} to ${vac.endDate}</p>
+                    </div>
+                    <button class="btn-danger" onclick="deleteVacationConfirm(${vac.id})">🗑️ Delete</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function deleteVacationConfirm(id) {
+            if (confirm('Delete this vacation?')) {
+                app.deleteVacation(id);
+                renderVacations();
+            }
+        }
+
+        function generateSchedule() {
+            const startDate = document.getElementById('scheduleStartDate').value;
+            const days = document.getElementById('scheduleLength').value;
+
+            if (app.generateSchedule(startDate, days)) {
+                showAlert('Schedule generated successfully!', 'success');
+                renderSchedule();
+            }
+        }
+
+        function renderSchedule() {
+            const grid = document.getElementById('scheduleGrid');
+            grid.innerHTML = '';
+
+            if (!app.schedule.schedule || Object.keys(app.schedule.schedule).length === 0) {
+                grid.innerHTML = '<p style="color: #999;">Generate a schedule first.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'schedule-table';
+
+            // Create header
+            const headerRow = table.insertRow();
+            const nameHeader = headerRow.insertCell();
+            nameHeader.textContent = 'Employee';
+            nameHeader.style.minWidth = '120px';
+
+            const startDate = new Date(app.schedule.startDate);
+            for (let i = 0; i < app.schedule.days; i++) {
+                const date = new Date(startDate);
+                date.setDate(date.getDate() + i);
+                const header = headerRow.insertCell();
+                header.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                header.style.minWidth = '90px';
+            }
+
+            // Create rows for each employee
+            Object.keys(app.schedule.schedule).forEach(employeeName => {
+                const row = table.insertRow();
+                const nameCell = row.insertCell();
+                nameCell.textContent = employeeName;
+                nameCell.style.fontWeight = '600';
+
+                app.schedule.schedule[employeeName].forEach(day => {
+                    const cell = row.insertCell();
+                    const shiftElement = document.createElement('div');
+                    
+                    if (day.shift === 'day') {
+                        shiftElement.className = 'shift-day';
+                        shiftElement.textContent = '🌞 Day';
+                    } else if (day.shift === 'night') {
+                        shiftElement.className = 'shift-night';
+                        shiftElement.textContent = '🌙 Night';
+                    } else if (day.shift === 'vacation') {
+                        shiftElement.className = 'shift-vacation';
+                        shiftElement.textContent = '✈️ Vacation';
+                    } else {
+                        shiftElement.className = 'shift-off';
+                        shiftElement.textContent = '📴 Off';
+                    }
+                    
+                    cell.appendChild(shiftElement);
+                });
+            });
+
+            grid.appendChild(table);
+        }
+
+        function exportScheduleCSV() {
+            if (!app.schedule.schedule || Object.keys(app.schedule.schedule).length === 0) {
+                alert('Generate a schedule first');
+                return;
+            }
+
+            let csv = 'Employee';
+            const startDate = new Date(app.schedule.startDate);
+            
+            for (let i = 0; i < app.schedule.days; i++) {
+                const date = new Date(startDate);
+                date.setDate(date.getDate() + i);
+                csv += ',' + date.toISOString().split('T')[0];
+            }
+            csv += '\n';
+
+            Object.keys(app.schedule.schedule).forEach(employeeName => {
+                csv += employeeName;
+                app.schedule.schedule[employeeName].forEach(day => {
+                    csv += ',' + day.shift;
+                });
+                csv += '\n';
+            });
+
+            downloadFile(csv, 'schedule.csv', 'text/csv');
+        }
+
+        function exportSchedulePDF() {
+            if (!app.schedule.schedule || Object.keys(app.schedule.schedule).length === 0) {
+                alert('Generate a schedule first');
+                return;
+            }
+
+            let pdf = '%PDF-1.4\n';
+            pdf += '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n';
+            pdf += '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n';
+            pdf += '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>\nendobj\n';
+            pdf += '4 0 obj\n<< /Length 1000 >>\nstream\nBT /F1 12 Tf 50 750 Td (Schedule Pro - Generated Schedule) Tj\n';
+
+            let y = 720;
+            Object.keys(app.schedule.schedule).forEach(employeeName => {
+                pdf += `50 ${y} Td (${employeeName}) Tj\n`;
+                y -= 15;
+            });
+
+            pdf += 'ET\nendstream\nendobj\n';
+            pdf += 'xref\n0 5\n0000000000 65535 f\n0000000009 00000 n\n0000000074 00000 n\n0000000133 00000 n\n0000000228 00000 n\n';
+            pdf += 'trailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n1327\n%%EOF';
+
+            downloadFile(pdf, 'schedule.pdf', 'application/pdf');
+        }
+
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type: type });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            
+            const content = document.querySelector('.content');
+            content.insertBefore(alertDiv, content.firstChild);
+            
+            setTimeout(() => alertDiv.remove(), 3000);
+        }
+
+        // Initial render
+        renderEmployees();
+        renderPreferences();
+        renderRequests();
+        renderVacations();
+        renderSchedule();
+    </script>
+</body>
+</html>
