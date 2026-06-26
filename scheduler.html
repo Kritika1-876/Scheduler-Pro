@@ -310,6 +310,12 @@
             border: 1px solid #bee5eb;
         }
 
+        .alert-warning {
+            background: #fff3cd;
+            color: #664d03;
+            border: 1px solid #ffecb5;
+        }
+
         /* Export Section */
         .export-buttons {
             display: flex;
@@ -439,6 +445,16 @@
         .preference-label {
             flex: 1;
         }
+
+        .coverage-info {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: #1565c0;
+        }
     </style>
 </head>
 <body>
@@ -565,6 +581,10 @@
             <div class="content">
                 <h2>Generated Schedule</h2>
 
+                <div class="coverage-info">
+                    ℹ️ This schedule ensures <strong>2 people on day shift</strong> and <strong>2 people on night shift</strong> each day, while respecting all requests and vacation dates.
+                </div>
+
                 <div class="form-group">
                     <label>Schedule Start Date</label>
                     <input type="date" id="scheduleStartDate">
@@ -606,7 +626,14 @@
                 return data ? JSON.parse(data) : null;
             }
 
-            // Generate random 2 back-to-back days off
+            // Generate random 2 back-to-back days off for a specific week
+            generateRandomDaysOffForWeek(weekStart) {
+                const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const startDay = Math.floor(Math.random() * 6); // 0-5 to allow pairs
+                return [daysOfWeek[startDay], daysOfWeek[startDay + 1]];
+            }
+
+            // Generate static random days off (same for all weeks)
             generateRandomDaysOff() {
                 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
                 const startDay = Math.floor(Math.random() * 6); // 0-5 to allow pairs
@@ -687,9 +714,36 @@
                 this.saveData('vacations', this.vacations);
             }
 
+            isEmployeeAvailable(employeeName, date) {
+                // Check if employee is on vacation
+                const onVacation = this.vacations.some(v => 
+                    v.employeeName === employeeName &&
+                    new Date(v.startDate) <= new Date(date) &&
+                    new Date(v.endDate) >= new Date(date)
+                );
+
+                if (onVacation) return false;
+
+                // Check if employee has time-off request
+                const hasRequest = this.requests.some(r =>
+                    r.employeeName === employeeName &&
+                    new Date(r.startDate) <= new Date(date) &&
+                    new Date(r.endDate) >= new Date(date)
+                );
+
+                if (hasRequest) return false;
+
+                return true;
+            }
+
             generateSchedule(startDate, days) {
                 if (!startDate || !days) {
                     alert('Please fill in all fields');
+                    return false;
+                }
+
+                if (this.employees.length < 4) {
+                    alert('You need at least 4 employees to generate a schedule with 2 day + 2 night coverage');
                     return false;
                 }
 
@@ -697,70 +751,127 @@
                 const start = new Date(startDate);
                 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-                this.employees.forEach(employee => {
-                    schedule[employee.name] = [];
-                    let lastShift = 'day';
-
-                    for (let i = 0; i < parseInt(days); i++) {
-                        const currentDate = new Date(start);
-                        currentDate.setDate(currentDate.getDate() + i);
-                        const dateStr = currentDate.toISOString().split('T')[0];
-                        const dayName = daysOfWeek[currentDate.getDay()];
-
-                        // Check if vacation
-                        const onVacation = this.vacations.some(v => 
-                            v.employeeName === employee.name &&
-                            new Date(v.startDate) <= currentDate &&
-                            new Date(v.endDate) >= currentDate
-                        );
-
-                        if (onVacation) {
-                            schedule[employee.name].push({ date: dateStr, shift: 'vacation' });
-                            continue;
-                        }
-
-                        // Check if day off
-                        if (employee.daysOff.includes(dayName)) {
-                            schedule[employee.name].push({ date: dateStr, shift: 'off' });
-                            continue;
-                        }
-
-                        // Check requests
-                        const hasRequest = this.requests.some(r =>
-                            r.employeeName === employee.name &&
-                            new Date(r.startDate) <= currentDate &&
-                            new Date(r.endDate) >= currentDate
-                        );
-
-                        if (hasRequest) {
-                            schedule[employee.name].push({ date: dateStr, shift: 'off' });
-                            continue;
-                        }
-
-                        // Assign shift based on preference
-                        let shift = 'day';
-
-                        if (employee.shiftPreference === 'night') {
-                            shift = 'night';
-                            // Occasionally assign day shifts even if prefer night (15% chance)
-                            if (Math.random() < 0.15) {
-                                shift = 'day';
-                            }
-                        } else if (employee.shiftPreference === 'day') {
-                            shift = 'day';
-                            // Occasionally assign night shifts even if prefer day (15% chance)
-                            if (Math.random() < 0.15) {
-                                shift = 'night';
-                            }
-                        } else {
-                            // Balanced - alternate between day and night
-                            shift = lastShift === 'day' ? 'night' : 'day';
-                            lastShift = shift;
-                        }
-
-                        schedule[employee.name].push({ date: dateStr, shift: shift });
-                    }
+                // Initialize schedule for all employees
+                this.employees.forEach(emp => {
+                    schedule[emp.name] = [];
                 });
+
+                // Generate schedule for each day
+                for (let i = 0; i < parseInt(days); i++) {
+                    const currentDate = new Date(start);
+                    currentDate.setDate(currentDate.getDate() + i);
+                    const dateStr = currentDate.toISOString().split('T')[0];
+                    const dayName = daysOfWeek[currentDate.getDay()];
+                    const weekStart = new Date(currentDate);
+                    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+
+                    // Generate random days off for this week
+                    const weekKey = weekStart.toISOString().split('T')[0];
+                    let weeklyDaysOff = JSON.parse(localStorage.getItem('weeklyDaysOff_' + weekKey)) || {};
+
+                    // For each employee, determine their shift for this day
+                    const dayShifts = [];
+                    const nightShifts = [];
+
+                    this.employees.forEach(emp => {
+                        // Check if employee has assigned days off for this week
+                        if (!weeklyDaysOff[emp.name]) {
+                            weeklyDaysOff[emp.name] = this.generateRandomDaysOffForWeek(weekStart);
+                        }
+
+                        const empWeeklyDaysOff = weeklyDaysOff[emp.name];
+
+                        // Mark vacation/request first
+                        if (!this.isEmployeeAvailable(emp.name, currentDate)) {
+                            schedule[emp.name].push({ date: dateStr, shift: 'off' });
+                            return;
+                        }
+
+                        // Check if it's a day off
+                        if (empWeeklyDaysOff.includes(dayName)) {
+                            schedule[emp.name].push({ date: dateStr, shift: 'off' });
+                            return;
+                        }
+
+                        // Employee is available for a shift
+                        if (emp.shiftPreference === 'day') {
+                            dayShifts.push({ emp: emp.name, preference: 'strong' });
+                        } else if (emp.shiftPreference === 'night') {
+                            nightShifts.push({ emp: emp.name, preference: 'strong' });
+                        } else {
+                            // Balanced preference - flexible
+                            if (dayShifts.length < 2) {
+                                dayShifts.push({ emp: emp.name, preference: 'flexible' });
+                            } else if (nightShifts.length < 2) {
+                                nightShifts.push({ emp: emp.name, preference: 'flexible' });
+                            }
+                        }
+                    });
+
+                    // Save weekly days off for later reference
+                    localStorage.setItem('weeklyDaysOff_' + weekKey, JSON.stringify(weeklyDaysOff));
+
+                    // Now assign shifts ensuring 2 day and 2 night
+                    const assignedEmployees = new Set();
+                    const dayAssignments = [];
+                    const nightAssignments = [];
+
+                    // First, assign those with strong preferences
+                    dayShifts.forEach(({ emp, preference }) => {
+                        if (preference === 'strong' && dayAssignments.length < 2 && !assignedEmployees.has(emp)) {
+                            dayAssignments.push(emp);
+                            assignedEmployees.add(emp);
+                        }
+                    });
+
+                    nightShifts.forEach(({ emp, preference }) => {
+                        if (preference === 'strong' && nightAssignments.length < 2 && !assignedEmployees.has(emp)) {
+                            nightAssignments.push(emp);
+                            assignedEmployees.add(emp);
+                        }
+                    });
+
+                    // Then fill remaining slots with flexible employees
+                    const flexibleEmployees = [];
+                    this.employees.forEach(emp => {
+                        if (!assignedEmployees.has(emp.name) && this.isEmployeeAvailable(emp.name, currentDate)) {
+                            const empWeeklyDaysOff = weeklyDaysOff[emp.name] || [];
+                            if (!empWeeklyDaysOff.includes(dayName)) {
+                                flexibleEmployees.push(emp.name);
+                            }
+                        }
+                    });
+
+                    while (dayAssignments.length < 2 && flexibleEmployees.length > 0) {
+                        const idx = Math.floor(Math.random() * flexibleEmployees.length);
+                        const emp = flexibleEmployees[idx];
+                        dayAssignments.push(emp);
+                        assignedEmployees.add(emp);
+                        flexibleEmployees.splice(idx, 1);
+                    }
+
+                    while (nightAssignments.length < 2 && flexibleEmployees.length > 0) {
+                        const idx = Math.floor(Math.random() * flexibleEmployees.length);
+                        const emp = flexibleEmployees[idx];
+                        nightAssignments.push(emp);
+                        assignedEmployees.add(emp);
+                        flexibleEmployees.splice(idx, 1);
+                    }
+
+                    // Record assignments for all employees
+                    this.employees.forEach(emp => {
+                        if (dayAssignments.includes(emp.name)) {
+                            schedule[emp.name].push({ date: dateStr, shift: 'day' });
+                        } else if (nightAssignments.includes(emp.name)) {
+                            schedule[emp.name].push({ date: dateStr, shift: 'night' });
+                        } else if (assignedEmployees.has(emp.name)) {
+                            // Already marked as off above
+                        } else {
+                            // Unassigned (shouldn't happen but mark as off for safety)
+                            schedule[emp.name].push({ date: dateStr, shift: 'off' });
+                        }
+                    });
+                }
 
                 this.schedule = { startDate, days: parseInt(days), schedule };
                 this.saveData('schedule', this.schedule);
@@ -816,7 +927,7 @@
                     <div class="employee-info">
                         <h3>${emp.name}</h3>
                         <p><strong>Hours:</strong> ${emp.hours} hours/day</p>
-                        <p><strong>Days Off:</strong> ${emp.daysOff.join(', ')}</p>
+                        <p><strong>Base Days Off:</strong> ${emp.daysOff.join(', ')} <small>(varies weekly)</small></p>
                         <p><strong>Shift Preference:</strong> ${preferenceEmoji} ${emp.shiftPreference.charAt(0).toUpperCase() + emp.shiftPreference.slice(1)}</p>
                     </div>
                     <button class="btn-danger" onclick="deleteEmployeeConfirm(${emp.id})">🗑️ Delete</button>
@@ -953,7 +1064,7 @@
             }
 
             if (app.generateSchedule(startDate, days)) {
-                showAlert('Schedule generated successfully!', 'success');
+                showAlert('Schedule generated successfully with 2 day + 2 night coverage!', 'success');
                 renderSchedule();
             }
         }
@@ -1089,7 +1200,7 @@
             const content = document.querySelector('.content');
             content.insertBefore(alertDiv, content.firstChild);
             
-            setTimeout(() => alertDiv.remove(), 3000);
+            setTimeout(() => alertDiv.remove(), 4000);
         }
 
         // Initial render
