@@ -520,7 +520,7 @@
                 <h2>Generated Schedule</h2>
 
                 <div class="coverage-info">
-                    ℹ️ This schedule ensures <strong>exactly 2 people on day shift</strong> and <strong>exactly 2 people on night shift</strong> each day with fully randomized days off, while respecting all requests and vacation dates.
+                    ℹ️ This schedule ensures <strong>balanced work distribution</strong> with <strong>2 people on day shift</strong> and <strong>2 people on night shift</strong> each day, while respecting all requests and vacation dates.
                 </div>
 
                 <div class="form-group">
@@ -540,6 +540,7 @@
                     <button class="btn-secondary" onclick="exportSchedulePDF()">📄 Export as PDF</button>
                 </div>
 
+                <div id="balanceInfo" style="margin-top: 20px;"></div>
                 <div class="schedule-grid" id="scheduleGrid"></div>
             </div>
         </div>
@@ -564,7 +565,6 @@
                 return data ? JSON.parse(data) : null;
             }
 
-            // Generate static random days off for employee profile
             generateRandomDaysOff() {
                 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
                 const startDay = Math.floor(Math.random() * 6);
@@ -646,7 +646,6 @@
             }
 
             isEmployeeUnavailable(employeeName, date) {
-                // Check if employee is on vacation
                 const onVacation = this.vacations.some(v => 
                     v.employeeName === employeeName &&
                     new Date(v.startDate) <= new Date(date) &&
@@ -655,7 +654,6 @@
 
                 if (onVacation) return true;
 
-                // Check if employee has time-off request
                 const hasRequest = this.requests.some(r =>
                     r.employeeName === employeeName &&
                     new Date(r.startDate) <= new Date(date) &&
@@ -669,7 +667,7 @@
 
             generateRandomDaysOffForDay() {
                 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                const startDay = Math.floor(Math.random() * 6); // 0-5 to allow pairs
+                const startDay = Math.floor(Math.random() * 6);
                 return [daysOfWeek[startDay], daysOfWeek[startDay + 1]];
             }
 
@@ -687,53 +685,67 @@
                 const schedule = {};
                 const start = new Date(startDate);
                 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const numDays = parseInt(days);
 
-                // Initialize schedule for all employees
+                // Initialize schedule and tracking
                 this.employees.forEach(emp => {
                     schedule[emp.name] = [];
                 });
 
+                // Track work days for each employee to ensure balance
+                const workDayCount = {};
+                this.employees.forEach(emp => {
+                    workDayCount[emp.name] = 0;
+                });
+
+                // Calculate target work days per employee (considering total available days)
+                const targetWorkDays = Math.floor((numDays * 2) / this.employees.length);
+
                 // Generate schedule for each day
-                for (let i = 0; i < parseInt(days); i++) {
+                for (let i = 0; i < numDays; i++) {
                     const currentDate = new Date(start);
                     currentDate.setDate(currentDate.getDate() + i);
                     const dateStr = currentDate.toISOString().split('T')[0];
                     const dayName = daysOfWeek[currentDate.getDay()];
 
-                    // Generate RANDOM days off for THIS specific day (no pattern)
+                    // Generate random days off for this day
                     const randomDaysOff = this.generateRandomDaysOffForDay();
 
-                    // First, mark all unavailable employees
+                    // Get available employees and sort by work days (ascending)
                     const availableEmployees = [];
 
                     this.employees.forEach(emp => {
                         if (this.isEmployeeUnavailable(emp.name, currentDate)) {
                             schedule[emp.name].push({ date: dateStr, shift: 'off' });
                         } else if (randomDaysOff.includes(dayName)) {
-                            // Random day off for this specific day
                             schedule[emp.name].push({ date: dateStr, shift: 'off' });
                         } else {
                             availableEmployees.push(emp);
                         }
                     });
 
-                    // Strictly assign exactly 2 to day shift and 2 to night shift
+                    // Sort available employees by current work day count (prioritize those with fewer days)
+                    availableEmployees.sort((a, b) => workDayCount[a.name] - workDayCount[b.name]);
+
+                    // Assign shifts: try to assign those with fewer work days
                     const dayAssignments = [];
                     const nightAssignments = [];
 
-                    // First pass: assign based on preferences
+                    // First pass: assign based on preferences and work balance
                     const dayPreference = availableEmployees.filter(e => e.shiftPreference === 'day');
                     const nightPreference = availableEmployees.filter(e => e.shiftPreference === 'night');
                     const balanced = availableEmployees.filter(e => e.shiftPreference === 'balanced');
 
-                    // Assign day preferences to day shift (up to 2)
+                    // Assign day preferences to day shift
                     for (let j = 0; j < Math.min(2, dayPreference.length); j++) {
                         dayAssignments.push(dayPreference[j].name);
+                        workDayCount[dayPreference[j].name]++;
                     }
 
-                    // Assign night preferences to night shift (up to 2)
+                    // Assign night preferences to night shift
                     for (let j = 0; j < Math.min(2, nightPreference.length); j++) {
                         nightAssignments.push(nightPreference[j].name);
+                        workDayCount[nightPreference[j].name]++;
                     }
 
                     // Fill remaining slots with balanced employees
@@ -742,48 +754,51 @@
                     );
 
                     while (dayAssignments.length < 2 && remaining.length > 0) {
-                        const idx = Math.floor(Math.random() * remaining.length);
+                        const idx = 0; // Take first (least work days due to earlier sort)
                         dayAssignments.push(remaining[idx].name);
+                        workDayCount[remaining[idx].name]++;
                         remaining.splice(idx, 1);
                     }
 
                     while (nightAssignments.length < 2 && remaining.length > 0) {
-                        const idx = Math.floor(Math.random() * remaining.length);
+                        const idx = 0;
                         nightAssignments.push(remaining[idx].name);
+                        workDayCount[remaining[idx].name]++;
                         remaining.splice(idx, 1);
                     }
 
-                    // If STILL need to fill slots, take from any available
+                    // If still need to fill slots, take from any available
                     const allAvailable = availableEmployees.map(e => e.name);
 
                     while (dayAssignments.length < 2) {
                         for (let emp of allAvailable) {
                             if (!dayAssignments.includes(emp) && !nightAssignments.includes(emp)) {
                                 dayAssignments.push(emp);
+                                workDayCount[emp]++;
                                 break;
                             }
                         }
-                        break; // Prevent infinite loop
+                        break;
                     }
 
                     while (nightAssignments.length < 2) {
                         for (let emp of allAvailable) {
                             if (!nightAssignments.includes(emp) && !dayAssignments.includes(emp)) {
                                 nightAssignments.push(emp);
+                                workDayCount[emp]++;
                                 break;
                             }
                         }
-                        break; // Prevent infinite loop
+                        break;
                     }
 
-                    // Record assignments for all employees
+                    // Record all assignments
                     this.employees.forEach(emp => {
                         if (dayAssignments.includes(emp.name)) {
                             schedule[emp.name].push({ date: dateStr, shift: 'day' });
                         } else if (nightAssignments.includes(emp.name)) {
                             schedule[emp.name].push({ date: dateStr, shift: 'night' });
                         } else {
-                            // Already marked as off above (vacation/request/random day off)
                             if (!schedule[emp.name].find(s => s.date === dateStr)) {
                                 schedule[emp.name].push({ date: dateStr, shift: 'off' });
                             }
@@ -791,7 +806,7 @@
                     });
                 }
 
-                this.schedule = { startDate, days: parseInt(days), schedule };
+                this.schedule = { startDate, days: numDays, schedule, workDayCount };
                 this.saveData('schedule', this.schedule);
                 return true;
             }
@@ -981,9 +996,36 @@
             }
 
             if (app.generateSchedule(startDate, days)) {
-                showAlert('Schedule generated successfully with strict 2 day + 2 night coverage!', 'success');
+                showAlert('Schedule generated successfully with balanced work distribution!', 'success');
                 renderSchedule();
+                renderBalanceInfo();
             }
+        }
+
+        function renderBalanceInfo() {
+            const balanceDiv = document.getElementById('balanceInfo');
+            balanceDiv.innerHTML = '';
+
+            if (!app.schedule.workDayCount) {
+                return;
+            }
+
+            const info = document.createElement('div');
+            info.style.background = '#e8f5e9';
+            info.style.padding = '15px';
+            info.style.borderRadius = '8px';
+            info.style.marginBottom = '15px';
+            info.style.borderLeft = '4px solid #4caf50';
+            
+            let html = '<strong>📊 Work Balance Summary:</strong><br>';
+            
+            Object.keys(app.schedule.workDayCount).forEach(empName => {
+                const workDays = app.schedule.workDayCount[empName];
+                html += `${empName}: <strong>${workDays} working days</strong><br>`;
+            });
+
+            info.innerHTML = html;
+            balanceDiv.appendChild(info);
         }
 
         function renderSchedule() {
