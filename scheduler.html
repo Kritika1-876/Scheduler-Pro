@@ -393,13 +393,34 @@
             font-size: 0.9em;
             color: #1565c0;
         }
+
+        .balance-info {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .balance-info strong {
+            display: block;
+            margin-bottom: 10px;
+            color: #2e7d32;
+        }
+
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 0.95em;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>📅 Scheduler Pro</h1>
-            <p>Manage your team schedules efficiently</p>
+            <p>24-Hour Coverage Schedule Management</p>
         </div>
 
         <div class="nav-tabs">
@@ -421,7 +442,7 @@
                 <div class="form-group">
                     <label>Working Hours Per Day</label>
                     <div class="hours-input">
-                        <input type="number" id="workingHours" placeholder="e.g., 8" min="1" max="24" value="8">
+                        <input type="number" id="workingHours" placeholder="e.g., 12" min="1" max="24" value="12">
                         <span>hours</span>
                     </div>
                 </div>
@@ -431,11 +452,11 @@
                     <div class="preference-options">
                         <label class="preference-option">
                             <input type="radio" name="shiftPreference" value="day"> 
-                            <span class="preference-label">☀️ Prefer Day Shift</span>
+                            <span class="preference-label">☀️ Prefer Day Shift (6am-6pm)</span>
                         </label>
                         <label class="preference-option">
                             <input type="radio" name="shiftPreference" value="night"> 
-                            <span class="preference-label">🌙 Prefer Night Shift</span>
+                            <span class="preference-label">🌙 Prefer Night Shift (6pm-6am)</span>
                         </label>
                         <label class="preference-option">
                             <input type="radio" name="shiftPreference" value="balanced" checked> 
@@ -520,7 +541,7 @@
                 <h2>Generated Schedule</h2>
 
                 <div class="coverage-info">
-                    ℹ️ This schedule ensures <strong>balanced work distribution</strong> with <strong>2 people on day shift</strong> and <strong>2 people on night shift</strong> each day, while respecting all requests and vacation dates.
+                    ℹ️ <strong>24-Hour Coverage:</strong> Always 2 people on day shift (6am-6pm) and 2 people on night shift (6pm-6am). Balanced work distribution across all employees.
                 </div>
 
                 <div class="form-group">
@@ -698,8 +719,8 @@
                     workDayCount[emp.name] = 0;
                 });
 
-                // Calculate target work days per employee (considering total available days)
-                const targetWorkDays = Math.floor((numDays * 2) / this.employees.length);
+                // Calculate target work days per employee (4 positions × numDays / total employees)
+                const targetWorkDays = Math.floor((numDays * 4) / this.employees.length);
 
                 // Generate schedule for each day
                 for (let i = 0; i < numDays; i++) {
@@ -727,7 +748,7 @@
                     // Sort available employees by current work day count (prioritize those with fewer days)
                     availableEmployees.sort((a, b) => workDayCount[a.name] - workDayCount[b.name]);
 
-                    // Assign shifts: try to assign those with fewer work days
+                    // Strictly assign 2 to day shift and 2 to night shift
                     const dayAssignments = [];
                     const nightAssignments = [];
 
@@ -736,13 +757,13 @@
                     const nightPreference = availableEmployees.filter(e => e.shiftPreference === 'night');
                     const balanced = availableEmployees.filter(e => e.shiftPreference === 'balanced');
 
-                    // Assign day preferences to day shift
+                    // Assign day preferences to day shift (up to 2)
                     for (let j = 0; j < Math.min(2, dayPreference.length); j++) {
                         dayAssignments.push(dayPreference[j].name);
                         workDayCount[dayPreference[j].name]++;
                     }
 
-                    // Assign night preferences to night shift
+                    // Assign night preferences to night shift (up to 2)
                     for (let j = 0; j < Math.min(2, nightPreference.length); j++) {
                         nightAssignments.push(nightPreference[j].name);
                         workDayCount[nightPreference[j].name]++;
@@ -754,7 +775,7 @@
                     );
 
                     while (dayAssignments.length < 2 && remaining.length > 0) {
-                        const idx = 0; // Take first (least work days due to earlier sort)
+                        const idx = 0;
                         dayAssignments.push(remaining[idx].name);
                         workDayCount[remaining[idx].name]++;
                         remaining.splice(idx, 1);
@@ -767,7 +788,7 @@
                         remaining.splice(idx, 1);
                     }
 
-                    // If still need to fill slots, take from any available
+                    // If STILL need to fill slots, take from any available
                     const allAvailable = availableEmployees.map(e => e.name);
 
                     while (dayAssignments.length < 2) {
@@ -795,9 +816,9 @@
                     // Record all assignments
                     this.employees.forEach(emp => {
                         if (dayAssignments.includes(emp.name)) {
-                            schedule[emp.name].push({ date: dateStr, shift: 'day' });
+                            schedule[emp.name].push({ date: dateStr, shift: 'day', time: '6am-6pm' });
                         } else if (nightAssignments.includes(emp.name)) {
-                            schedule[emp.name].push({ date: dateStr, shift: 'night' });
+                            schedule[emp.name].push({ date: dateStr, shift: 'night', time: '6pm-6am' });
                         } else {
                             if (!schedule[emp.name].find(s => s.date === dateStr)) {
                                 schedule[emp.name].push({ date: dateStr, shift: 'off' });
@@ -836,7 +857,7 @@
             if (app.addEmployee(name, hours, shiftPreference)) {
                 showAlert('Employee added successfully!', 'success');
                 document.getElementById('employeeName').value = '';
-                document.getElementById('workingHours').value = '8';
+                document.getElementById('workingHours').value = '12';
                 document.querySelector('input[name="shiftPreference"][value="balanced"]').checked = true;
                 renderEmployees();
                 updateEmployeeSelects();
@@ -996,7 +1017,7 @@
             }
 
             if (app.generateSchedule(startDate, days)) {
-                showAlert('Schedule generated successfully with balanced work distribution!', 'success');
+                showAlert('Schedule generated successfully with 24-hour coverage!', 'success');
                 renderSchedule();
                 renderBalanceInfo();
             }
@@ -1011,17 +1032,13 @@
             }
 
             const info = document.createElement('div');
-            info.style.background = '#e8f5e9';
-            info.style.padding = '15px';
-            info.style.borderRadius = '8px';
-            info.style.marginBottom = '15px';
-            info.style.borderLeft = '4px solid #4caf50';
+            info.className = 'balance-info';
             
-            let html = '<strong>📊 Work Balance Summary:</strong><br>';
+            let html = '<strong>📊 Work Balance Summary (24-Hour Coverage: 4 positions/day)</strong>';
             
-            Object.keys(app.schedule.workDayCount).forEach(empName => {
-                const workDays = app.schedule.workDayCount[empName];
-                html += `${empName}: <strong>${workDays} working days</strong><br>`;
+            const entries = Object.entries(app.schedule.workDayCount).sort();
+            entries.forEach(([empName, workDays]) => {
+                html += `<div class="balance-row"><span>${empName}:</span> <strong>${workDays} days</strong></div>`;
             });
 
             info.innerHTML = html;
@@ -1052,7 +1069,7 @@
                 date.setDate(date.getDate() + i);
                 const header = headerRow.insertCell();
                 header.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                header.style.minWidth = '90px';
+                header.style.minWidth = '100px';
             }
 
             // Create rows for each employee
@@ -1068,10 +1085,14 @@
                     
                     if (day.shift === 'day') {
                         shiftElement.className = 'shift-day';
-                        shiftElement.textContent = '🌞 Day';
+                        shiftElement.textContent = '🌞 Day\n6am-6pm';
+                        shiftElement.style.whiteSpace = 'pre-line';
+                        shiftElement.style.fontSize = '0.8em';
                     } else if (day.shift === 'night') {
                         shiftElement.className = 'shift-night';
-                        shiftElement.textContent = '🌙 Night';
+                        shiftElement.textContent = '🌙 Night\n6pm-6am';
+                        shiftElement.style.whiteSpace = 'pre-line';
+                        shiftElement.style.fontSize = '0.8em';
                     } else if (day.shift === 'vacation') {
                         shiftElement.className = 'shift-vacation';
                         shiftElement.textContent = '✈️ Vacation';
@@ -1124,7 +1145,7 @@
             pdf += '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n';
             pdf += '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n';
             pdf += '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>\nendobj\n';
-            pdf += '4 0 obj\n<< /Length 1000 >>\nstream\nBT /F1 12 Tf 50 750 Td (Schedule Pro - Generated Schedule) Tj\n';
+            pdf += '4 0 obj\n<< /Length 1000 >>\nstream\nBT /F1 12 Tf 50 750 Td (Schedule Pro - 24 Hour Coverage Schedule) Tj\n';
 
             let y = 720;
             Object.keys(app.schedule.schedule).forEach(employeeName => {
